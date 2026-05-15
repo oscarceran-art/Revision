@@ -10,17 +10,14 @@ body {
     margin: 0;
     font-family: 'Fraunces', serif;
     font-optical-sizing: auto;
-    /* Single bold rounded weight — no thin/thick mixing */
+    /* Fraunces with natural weight hierarchy + soft, rounded axis */
     font-variation-settings: "SOFT" 100, "WONK" 0, "opsz" 14;
-    font-weight: 700;
+    font-weight: 500;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     background: #FAF8F5;
     color: #1a1a1a;
 }
-
-* { font-weight: 700 !important; }
-strong, b { font-weight: 800 !important; }
 
 ::selection { background: #1a1a1a; color: #FAF8F5; }
 
@@ -29,9 +26,10 @@ strong, b { font-weight: 800 !important; }
 *::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.12); border-radius: 999px; }
 *::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.25); }
 
-/* Display headings — same bold weight, just larger optical size for rounder shapes */
+/* Display headings — heavier weight + larger optical size for rounder, friendlier shapes */
 .display, h1.display, h2.display {
     font-variation-settings: "SOFT" 100, "WONK" 0, "opsz" 144;
+    font-weight: 700;
     letter-spacing: -0.01em;
 }
 
