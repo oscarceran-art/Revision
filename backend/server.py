@@ -1142,8 +1142,9 @@ async def generate_notes(req: StudyNoteRequest):
     depth_map = {
         "overview": "Concise overview — 3 short sections, max 4 bullets each, no advanced jargon.",
         "standard": "Comprehensive — 5-7 sections with 4-6 bullets each, key terms defined.",
-        "deep": "In-depth — 7-10 sections, 6-8 bullets each, include nuances, common misconceptions, and exam-style tips.",
+        "deep": "In-depth but TIGHT — exactly 7 sections, exactly 6 bullets each (one sentence per bullet, no sub-points), include common misconceptions and exam tips. Be concise: every bullet ≤ 25 words.",
     }
+    max_tokens_map = {"overview": 2000, "standard": 4000, "deep": 8000}
     parts = [
         f"Generate clean, well-structured revision study notes on: \"{req.topic}\".",
         f"Depth: {depth_map[req.depth]}",
@@ -1153,24 +1154,21 @@ async def generate_notes(req: StudyNoteRequest):
         if subject.get('notes'):
             parts.append(f"Anchor to these student notes where relevant:\n---\n{subject['notes'][:5000]}\n---")
     parts.append(
-        "Return ONLY a JSON object:\n"
+        "Return ONLY a JSON object (no code fences, no prose):\n"
         "{\n"
         '  "title": "<short title>",\n'
-        '  "summary": "<1-2 sentence summary of what these notes cover>",\n'
-        '  "sections": [\n'
-        '    {"heading": "<section title>", "bullets": ["<bullet point>", ...]},\n'
-        '    ...\n'
-        '  ],\n'
-        '  "key_terms": [{"term": "<term>", "definition": "<short definition>"}, ...]\n'
+        '  "summary": "<1-2 sentence summary>",\n'
+        '  "sections": [{"heading": "...", "bullets": ["...", ...]}, ...],\n'
+        '  "key_terms": [{"term": "...", "definition": "..."}, ...]\n'
         '}\n'
-        "Use bullets that are full informative sentences, not fragments. No code fences."
+        "Keep all strings ASCII-friendly. Escape any quotes inside strings with backslash. Output MUST be valid parseable JSON."
     )
     prompt = "\n\n".join(parts)
     try:
         resp = await anthropic_client.messages.create(
             model=CLAUDE_MODEL,
-            max_tokens=4000,
-            system="You are an expert teacher and study-notes author. Return ONLY valid JSON, no prose.",
+            max_tokens=max_tokens_map[req.depth],
+            system="You are an expert teacher and study-notes author. Return ONLY valid JSON, no prose, no code fences. Output MUST be valid parseable JSON.",
             messages=[{"role": "user", "content": prompt}],
         )
         raw = resp.content[0].text if resp.content else ""
@@ -1179,6 +1177,8 @@ async def generate_notes(req: StudyNoteRequest):
     try:
         data = parse_worksheet_json(raw)
     except Exception as e:
+        logger.error(f"Notes parse failed. Raw first 500: {raw[:500]}")
+        logger.error(f"Raw last 500: {raw[-500:]}")
         raise HTTPException(status_code=502, detail=f"Could not parse notes: {e}")
 
     note = StudyNote(
